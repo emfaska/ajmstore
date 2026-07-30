@@ -24,7 +24,7 @@
         </a>
 
         <!-- Master Data (Dropdown) -->
-        <div x-data="{ open: false }">
+        <div x-data="{ open: {{ request()->routeIs('products.*', 'categories.*', 'brands.*', 'suppliers.*') ? 'true' : 'false' }} }">
             <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium">
                 <div class="flex items-center gap-3">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
@@ -33,26 +33,35 @@
                 <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
             <div x-show="open" x-collapse class="pl-11 pr-3 py-2 space-y-1" x-cloak>
-                <a href="#" class="block py-1.5 text-sm text-slate-400 hover:text-white">Barang</a>
-                <a href="#" class="block py-1.5 text-sm text-slate-400 hover:text-white">Kategori</a>
-                <a href="#" class="block py-1.5 text-sm text-slate-400 hover:text-white">Brand</a>
-                <a href="#" class="block py-1.5 text-sm text-slate-400 hover:text-white">Supplier</a>
+                <a href="{{ Route::has('products.index') ? route('products.index') : '#' }}" class="block py-1.5 text-sm {{ request()->routeIs('products.*') ? 'text-white font-semibold' : 'text-slate-400 hover:text-white' }}">Barang</a>
+                <a href="{{ Route::has('categories.index') ? route('categories.index') : '#' }}" class="block py-1.5 text-sm {{ request()->routeIs('categories.*') ? 'text-white font-semibold' : 'text-slate-400 hover:text-white' }}">Kategori</a>
+                <a href="{{ Route::has('brands.index') ? route('brands.index') : '#' }}" class="block py-1.5 text-sm {{ request()->routeIs('brands.*') ? 'text-white font-semibold' : 'text-slate-400 hover:text-white' }}">Brand</a>
+                <a href="{{ route('suppliers.index') }}" class="block py-1.5 text-sm {{ request()->routeIs('suppliers.*') ? 'text-white font-semibold' : 'text-slate-400 hover:text-white' }}">Supplier</a>
                 <a href="#" class="block py-1.5 text-sm text-slate-400 hover:text-white">Customer</a>
                 <a href="#" class="block py-1.5 text-sm text-slate-400 hover:text-white">Kendaraan</a>
             </div>
         </div>
 
         <!-- Pembelian -->
-        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium">
+        <a href="{{ route('purchases.index') }}" class="flex items-center gap-3 px-3 py-2.5 {{ request()->routeIs('purchases.*') ? 'bg-blue-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }} rounded-lg transition-colors text-sm font-medium">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
             Pembelian
         </a>
 
-        <!-- Penjualan (POS) -->
-        <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            Penjualan (POS)
-        </a>
+        <!-- Penjualan (POS) (Dropdown) -->
+        <div x-data="{ open: {{ request()->routeIs('sales.*') ? 'true' : 'false' }} }">
+            <button @click="open = !open" class="w-full flex items-center justify-between px-3 py-2.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Penjualan (POS)
+                </div>
+                <svg :class="{'rotate-180': open}" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div x-show="open" x-collapse class="pl-11 pr-3 py-2 space-y-1" x-cloak>
+                <a href="{{ route('sales.create') }}" class="block py-1.5 text-sm {{ request()->routeIs('sales.create') ? 'text-white font-semibold' : 'text-slate-400 hover:text-white' }}">Halaman Kasir (POS)</a>
+                <a href="{{ route('sales.index') }}" class="block py-1.5 text-sm {{ request()->routeIs('sales.index') && !request()->routeIs('sales.create') ? 'text-white font-semibold' : 'text-slate-400 hover:text-white' }}">Daftar Penjualan</a>
+            </div>
+        </div>
 
         <!-- Pengeluaran -->
         <a href="#" class="flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium">

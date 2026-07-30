@@ -27,7 +27,17 @@ interface PurchaseRepositoryInterface extends BaseRepositoryInterface
     public function sumTotal(string $from, string $to): float;
 
     /**
+     * Advanced search with filters (search, supplier_id, status, start_date, end_date, etc.).
+     */
+    public function advancedSearch(array $filters, int $perPage = 15): LengthAwarePaginator;
+
+    /**
      * Find a purchase by invoice number.
      */
     public function findByInvoice(string $invoiceNumber): ?\Illuminate\Database\Eloquent\Model;
+
+    /**
+     * Restore soft deleted purchase.
+     */
+    public function restore(int|string $id): bool;
 }

@@ -27,6 +27,7 @@ class StorePurchaseRequest extends FormRequest
             'purchase_date' => 'required|date',
             'status' => 'required|in:pending,completed,cancelled',
             'payment_status' => 'required|in:unpaid,partially_paid,paid',
+            'payment_method_id' => 'required_if:payment_status,paid|nullable|exists:payment_methods,id',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
@@ -43,6 +44,7 @@ class StorePurchaseRequest extends FormRequest
     {
         return [
             'required' => ':attribute wajib diisi.',
+            'required_if' => ':attribute wajib diisi jika status pembayaran lunas.',
             'string' => ':attribute harus berupa teks.',
             'max' => ':attribute maksimal :max karakter.',
             'unique' => ':attribute sudah ada.',
@@ -69,6 +71,7 @@ class StorePurchaseRequest extends FormRequest
             'purchase_date' => 'tanggal pembelian',
             'status' => 'status',
             'payment_status' => 'status pembayaran',
+            'payment_method_id' => 'metode pembayaran',
             'items' => 'item pembelian',
             'items.*.product_id' => 'produk',
             'items.*.quantity' => 'kuantitas',

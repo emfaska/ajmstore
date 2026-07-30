@@ -56,4 +56,45 @@ class PurchaseRepository extends BaseRepository implements PurchaseRepositoryInt
             ->where('invoice_number', $invoiceNumber)
             ->first();
     }
+
+    public function advancedSearch(array $filters, int $perPage = 15): LengthAwarePaginator
+    {
+        $query = $this->model->newQuery()->with(['supplier', 'items.product']);
+
+        if (isset($filters['trashed']) && $filters['trashed'] == '1') {
+            $query->onlyTrashed();
+        }
+
+        if (!empty($filters['search'])) {
+            $query->where('invoice_number', 'like', "%{$filters['search']}%");
+        }
+
+        if (!empty($filters['supplier_id'])) {
+            $query->where('supplier_id', $filters['supplier_id']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['payment_status'])) {
+            $query->where('payment_status', $filters['payment_status']);
+        }
+
+        if (!empty($filters['start_date'])) {
+            $query->whereDate('purchase_date', '>=', $filters['start_date']);
+        }
+
+        if (!empty($filters['end_date'])) {
+            $query->whereDate('purchase_date', '<=', $filters['end_date']);
+        }
+
+        return $query->latest('purchase_date')->paginate($perPage);
+    }
+
+    public function restore(int|string $id): bool
+    {
+        $record = $this->model->withTrashed()->findOrFail($id);
+        return (bool) $record->restore();
+    }
 }

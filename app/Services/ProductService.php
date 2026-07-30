@@ -165,4 +165,56 @@ class ProductService extends BaseService
             'sale_price' => $salePrice
         ]);
     }
+
+    /**
+     * Advanced search with filters and pagination.
+     */
+    public function advancedSearchPaginated(array $filters, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->productRepository->advancedSearch($filters, $perPage);
+    }
+
+    /**
+     * Restore a soft-deleted product.
+     */
+    public function restoreProduct(int|string $id): bool
+    {
+        return $this->productRepository->restore($id);
+    }
+
+    /**
+     * Handle product image upload.
+     */
+    public function handleImageUpload(?\Illuminate\Http\UploadedFile $image): ?string
+    {
+        if ($image) {
+            return $image->store('products', 'public');
+        }
+        return null;
+    }
+
+    /**
+     * Delete product image from storage.
+     */
+    public function deleteImage(?string $path): void
+    {
+        if ($path && \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+        }
+    }
+    /**
+     * Get all categories for dropdowns.
+     */
+    public function getAllCategories(): \Illuminate\Database\Eloquent\Collection
+    {
+        return \App\Models\Category::orderBy('name')->get();
+    }
+
+    /**
+     * Get all brands for dropdowns.
+     */
+    public function getAllBrands(): \Illuminate\Database\Eloquent\Collection
+    {
+        return \App\Models\Brand::orderBy('name')->get();
+    }
 }

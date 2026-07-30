@@ -26,6 +26,8 @@ class StoreSaleRequest extends FormRequest
             'vehicle_id' => 'nullable|exists:vehicles,id',
             'payment_method_id' => 'required|exists:payment_methods,id',
             'invoice_number' => 'required|string|max:255|unique:sales,invoice_number',
+            'transaction_type' => 'required|in:bengkel,penjualan_umum',
+            'notes' => 'nullable|string',
             'sale_date' => 'required|date',
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
@@ -35,6 +37,8 @@ class StoreSaleRequest extends FormRequest
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.selling_price' => 'required|numeric|min:0',
+            'cash_received' => 'nullable|numeric|min:0',
+            'change' => 'nullable|numeric|min:0',
         ];
     }
 

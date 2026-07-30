@@ -29,4 +29,28 @@ class CategoryRepository extends BaseRepository implements CategoryRepositoryInt
             ->with('products')
             ->get();
     }
+
+    public function advancedSearch(array $filters, int $perPage = 15): LengthAwarePaginator
+    {
+        $query = $this->model->newQuery();
+
+        if (isset($filters['trashed']) && $filters['trashed'] == '1') {
+            $query->onlyTrashed();
+        }
+
+        if (!empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('name', 'like', "%{$filters['search']}%")
+                  ->orWhere('slug', 'like', "%{$filters['search']}%");
+            });
+        }
+
+        return $query->latest()->paginate($perPage);
+    }
+
+    public function restore(int|string $id): bool
+    {
+        $record = $this->model->withTrashed()->findOrFail($id);
+        return (bool) $record->restore();
+    }
 }

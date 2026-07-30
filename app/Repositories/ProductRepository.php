@@ -62,4 +62,53 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
     {
         return $this->model->newQuery()->where('slug', $slug)->first();
     }
+
+    public function findByBarcode(string $barcode): ?Model
+    {
+        return $this->model->newQuery()->where('barcode', $barcode)->first();
+    }
+
+    public function restore(int|string $id): bool
+    {
+        $record = $this->model->withTrashed()->findOrFail($id);
+        return (bool) $record->restore();
+    }
+
+    public function advancedSearch(array $filters, int $perPage = 15): LengthAwarePaginator
+    {
+        $query = $this->model->newQuery()->with(['category', 'brand']);
+
+        // Check for trashed items if requested
+        if (isset($filters['trashed']) && $filters['trashed'] == '1') {
+            $query->onlyTrashed();
+        }
+
+        if (!empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('name', 'like', "%{$filters['search']}%")
+                  ->orWhere('sku', 'like', "%{$filters['search']}%")
+                  ->orWhere('barcode', 'like', "%{$filters['search']}%");
+            });
+        }
+
+        if (!empty($filters['category_id'])) {
+            $query->where('category_id', $filters['category_id']);
+        }
+
+        if (!empty($filters['brand_id'])) {
+            $query->where('brand_id', $filters['brand_id']);
+        }
+
+        if (isset($filters['stock_status'])) {
+            if ($filters['stock_status'] === 'low') {
+                $query->whereColumn('stock', '<=', 'min_stock');
+            } elseif ($filters['stock_status'] === 'out') {
+                $query->where('stock', '<=', 0);
+            } elseif ($filters['stock_status'] === 'in') {
+                $query->whereColumn('stock', '>', 'min_stock');
+            }
+        }
+
+        return $query->latest()->paginate($perPage);
+    }
 }

@@ -13,6 +13,12 @@ interface ProductRepositoryInterface extends BaseRepositoryInterface
     public function search(string $keyword, int $perPage = 15): LengthAwarePaginator;
 
     /**
+     * Advanced search with filters.
+     */
+    public function advancedSearch(array $filters, int $perPage = 15): LengthAwarePaginator;
+
+
+    /**
      * Return products where stock <= min_stock.
      */
     public function getLowStock(): Collection;
@@ -36,4 +42,14 @@ interface ProductRepositoryInterface extends BaseRepositoryInterface
      * Find a product by its slug.
      */
     public function findBySlug(string $slug): ?\Illuminate\Database\Eloquent\Model;
+
+    /**
+     * Find a product by its barcode.
+     */
+    public function findByBarcode(string $barcode): ?\Illuminate\Database\Eloquent\Model;
+
+    /**
+     * Restore a soft-deleted product.
+     */
+    public function restore(int|string $id): bool;
 }

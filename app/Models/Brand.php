@@ -12,7 +12,9 @@ class Brand extends Model
 
     protected $fillable = [
         'name',
+        'slug',
         'description',
+        'is_active',
     ];
 
     // -------------------------------------------------------------------------

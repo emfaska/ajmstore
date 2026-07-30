@@ -16,6 +16,8 @@ class Sale extends Model
         'vehicle_id',
         'payment_method_id',
         'invoice_number',
+        'transaction_type',
+        'notes',
         'sale_date',
         'subtotal',
         'discount',

@@ -54,3 +54,31 @@ Route::resource('analysis', AnalysisController::class)->only(['index']);
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+// Master Barang, Supplier, Kategori & Brand Routes
+Route::middleware(['auth', 'role:Owner,Admin'])->group(function () {
+    Route::patch('products/{product}/restore', [\App\Http\Controllers\ProductController::class, 'restore'])->name('products.restore');
+    Route::resource('products', \App\Http\Controllers\ProductController::class);
+    
+    Route::patch('suppliers/{supplier}/restore', [\App\Http\Controllers\SupplierController::class, 'restore'])->name('suppliers.restore');
+    Route::resource('suppliers', \App\Http\Controllers\SupplierController::class);
+    
+    Route::patch('categories/{category}/restore', [\App\Http\Controllers\CategoryController::class, 'restore'])->name('categories.restore');
+    Route::resource('categories', \App\Http\Controllers\CategoryController::class);
+    
+    Route::patch('brands/{brand}/restore', [\App\Http\Controllers\BrandController::class, 'restore'])->name('brands.restore');
+    Route::resource('brands', \App\Http\Controllers\BrandController::class);
+
+    Route::patch('purchases/{purchase}/restore', [\App\Http\Controllers\PurchaseController::class, 'restore'])->name('purchases.restore');
+    Route::resource('purchases', \App\Http\Controllers\PurchaseController::class);
+});
+
+// Modul POS (Point of Sale / Kasir) & Penjualan
+Route::middleware(['auth', 'role:Owner,Admin,Kasir'])->group(function () {
+    Route::get('sales/products/search', [\App\Http\Controllers\SaleController::class, 'searchProducts'])->name('sales.products.search');
+    Route::patch('sales/{sale}/restore', [\App\Http\Controllers\SaleController::class, 'restore'])->name('sales.restore');
+    Route::get('sales/{sale}/print', [\App\Http\Controllers\SaleController::class, 'print'])->name('sales.print');
+    Route::resource('sales', \App\Http\Controllers\SaleController::class);
+});
+
+require __DIR__.'/auth.php';
