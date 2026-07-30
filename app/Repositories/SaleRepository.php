@@ -82,4 +82,66 @@ class SaleRepository extends BaseRepository implements SaleRepositoryInterface
             ->latest('sale_date')
             ->paginate($perPage);
     }
+
+    public function advancedSearch(array $filters, int $perPage = 15): LengthAwarePaginator
+    {
+        $query = $this->model->newQuery()->with(['customer', 'paymentMethod']);
+
+        if (isset($filters['trashed']) && $filters['trashed'] == '1') {
+            $query->onlyTrashed();
+        }
+
+        if (!empty($filters['search'])) {
+            $query->where('invoice_number', 'like', "%{$filters['search']}%");
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['payment_status'])) {
+            $query->where('payment_status', $filters['payment_status']);
+        }
+
+        if (!empty($filters['start_date'])) {
+            $query->whereDate('sale_date', '>=', $filters['start_date']);
+        }
+
+        if (!empty($filters['end_date'])) {
+            $query->whereDate('sale_date', '<=', $filters['end_date']);
+        }
+
+        return $query->latest('id')->paginate($perPage);
+    }
+
+    public function countTodayWithInvoicePattern(string $pattern): int
+    {
+        return $this->model->newQuery()->withTrashed()->where('invoice_number', 'like', $pattern)->count();
+    }
+
+    public function findWithTrashedOrFail(int|string $id, array $with = []): \Illuminate\Database\Eloquent\Model
+    {
+        return $this->model->newQuery()->withTrashed()->with($with)->findOrFail($id);
+    }
+
+    public function getSalesReportData(array $filters): \Illuminate\Support\Collection
+    {
+        $query = $this->model->newQuery()
+            ->with(['items.product', 'customer', 'paymentMethod'])
+            ->where('status', 'completed');
+
+        if (!empty($filters['start_date'])) {
+            $query->whereDate('sale_date', '>=', $filters['start_date']);
+        }
+
+        if (!empty($filters['end_date'])) {
+            $query->whereDate('sale_date', '<=', $filters['end_date']);
+        }
+
+        if (!empty($filters['transaction_type'])) {
+            $query->where('transaction_type', $filters['transaction_type']);
+        }
+
+        return $query->latest('sale_date')->get();
+    }
 }

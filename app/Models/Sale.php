@@ -15,9 +15,11 @@ class Sale extends Model
         'customer_id',
         'vehicle_id',
         'payment_method_id',
+        'bengkel_id',
         'invoice_number',
         'transaction_type',
         'notes',
+        'billing_status',
         'sale_date',
         'subtotal',
         'discount',
@@ -52,6 +54,11 @@ class Sale extends Model
     public function paymentMethod(): BelongsTo
     {
         return $this->belongsTo(PaymentMethod::class);
+    }
+
+    public function bengkel(): BelongsTo
+    {
+        return $this->belongsTo(Bengkel::class);
     }
 
     public function items(): HasMany

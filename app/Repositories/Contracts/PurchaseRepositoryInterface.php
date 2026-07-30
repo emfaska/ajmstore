@@ -40,4 +40,14 @@ interface PurchaseRepositoryInterface extends BaseRepositoryInterface
      * Restore soft deleted purchase.
      */
     public function restore(int|string $id): bool;
+
+    /**
+     * Count purchases including soft-deleted ones.
+     */
+    public function countWithTrashed(): int;
+
+    /**
+     * Get completed purchases for reports matching filters.
+     */
+    public function getPurchaseReportData(array $filters): \Illuminate\Support\Collection;
 }

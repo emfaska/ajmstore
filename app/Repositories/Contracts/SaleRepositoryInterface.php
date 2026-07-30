@@ -45,4 +45,24 @@ interface SaleRepositoryInterface extends BaseRepositoryInterface
      * Return sales belonging to a specific customer.
      */
     public function getByCustomer(int $customerId, int $perPage = 15): LengthAwarePaginator;
+
+    /**
+     * Advanced search with filters (search, status, payment_status, start_date, end_date, etc.).
+     */
+    public function advancedSearch(array $filters, int $perPage = 15): LengthAwarePaginator;
+
+    /**
+     * Count sales of today matching pattern including soft-deleted ones.
+     */
+    public function countTodayWithInvoicePattern(string $pattern): int;
+
+    /**
+     * Find a sale including trashed with relations.
+     */
+    public function findWithTrashedOrFail(int|string $id, array $with = []): \Illuminate\Database\Eloquent\Model;
+
+    /**
+     * Get completed sales for reports matching filters.
+     */
+    public function getSalesReportData(array $filters): \Illuminate\Support\Collection;
 }

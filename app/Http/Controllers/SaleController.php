@@ -3,32 +3,45 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreSaleRequest;
-use App\Models\Customer;
-use App\Models\Vehicle;
-use App\Models\PaymentMethod;
-use App\Models\Product;
-use App\Models\Sale;
 use App\Services\SaleService;
 use App\Services\ProductService;
 use App\Services\CashTransactionService;
+use App\Repositories\Contracts\CustomerRepositoryInterface;
+use App\Repositories\Contracts\VehicleRepositoryInterface;
+use App\Repositories\Contracts\PaymentMethodRepositoryInterface;
+use App\Repositories\Contracts\ProductRepositoryInterface;
+use App\Repositories\Contracts\SaleRepositoryInterface;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
 
 class SaleController extends Controller
 {
     protected SaleService $saleService;
     protected ProductService $productService;
     protected CashTransactionService $cashTransactionService;
+    protected CustomerRepositoryInterface $customerRepository;
+    protected VehicleRepositoryInterface $vehicleRepository;
+    protected PaymentMethodRepositoryInterface $paymentMethodRepository;
+    protected ProductRepositoryInterface $productRepository;
+    protected SaleRepositoryInterface $saleRepository;
 
     public function __construct(
         SaleService $saleService,
         ProductService $productService,
-        CashTransactionService $cashTransactionService
+        CashTransactionService $cashTransactionService,
+        CustomerRepositoryInterface $customerRepository,
+        VehicleRepositoryInterface $vehicleRepository,
+        PaymentMethodRepositoryInterface $paymentMethodRepository,
+        ProductRepositoryInterface $productRepository,
+        SaleRepositoryInterface $saleRepository
     ) {
         $this->saleService = $saleService;
         $this->productService = $productService;
         $this->cashTransactionService = $cashTransactionService;
+        $this->customerRepository = $customerRepository;
+        $this->vehicleRepository = $vehicleRepository;
+        $this->paymentMethodRepository = $paymentMethodRepository;
+        $this->productRepository = $productRepository;
+        $this->saleRepository = $saleRepository;
     }
 
     /**
@@ -37,35 +50,7 @@ class SaleController extends Controller
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'status', 'payment_status', 'start_date', 'end_date', 'trashed']);
-        
-        $query = Sale::query()->with(['customer', 'paymentMethod']);
-
-        // Check for trashed items if requested
-        if (isset($filters['trashed']) && $filters['trashed'] == '1') {
-            $query->onlyTrashed();
-        }
-
-        if (!empty($filters['search'])) {
-            $query->where('invoice_number', 'like', "%{$filters['search']}%");
-        }
-
-        if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-
-        if (!empty($filters['payment_status'])) {
-            $query->where('payment_status', $filters['payment_status']);
-        }
-
-        if (!empty($filters['start_date'])) {
-            $query->whereDate('sale_date', '>=', $filters['start_date']);
-        }
-
-        if (!empty($filters['end_date'])) {
-            $query->whereDate('sale_date', '<=', $filters['end_date']);
-        }
-
-        $sales = $query->latest('id')->paginate(10);
+        $sales = $this->saleRepository->advancedSearch($filters, 10);
 
         return view('sales.index', compact('sales', 'filters'));
     }
@@ -76,23 +61,23 @@ class SaleController extends Controller
     public function create()
     {
         // Seeding default payment methods if they are empty
-        if (PaymentMethod::count() === 0) {
-            PaymentMethod::create(['name' => 'Tunai', 'description' => 'Pembayaran Tunai']);
-            PaymentMethod::create(['name' => 'Transfer', 'description' => 'Pembayaran Transfer Bank']);
-            PaymentMethod::create(['name' => 'QRIS', 'description' => 'Pembayaran QRIS']);
+        if ($this->paymentMethodRepository->count() === 0) {
+            $this->paymentMethodRepository->create(['name' => 'Tunai', 'description' => 'Pembayaran Tunai']);
+            $this->paymentMethodRepository->create(['name' => 'Transfer', 'description' => 'Pembayaran Transfer Bank']);
+            $this->paymentMethodRepository->create(['name' => 'QRIS', 'description' => 'Pembayaran QRIS']);
         }
 
-        $customers = Customer::orderBy('name')->get();
-        $vehicles = Vehicle::with('customer')->orderBy('license_plate')->get();
-        $paymentMethods = PaymentMethod::orderBy('name')->get();
+        $customers = $this->customerRepository->all()->sortBy('name');
+        $vehicles = $this->vehicleRepository->all(['customer'])->sortBy('license_plate');
+        $paymentMethods = $this->paymentMethodRepository->all()->sortBy('name');
 
         // Generate Unique Invoice Number: INV-YYYYMMDD-XXXX
         $today = date('Ymd');
-        $count = Sale::withTrashed()->where('invoice_number', 'like', "INV-{$today}-%")->count() + 1;
+        $count = $this->saleRepository->countTodayWithInvoicePattern("INV-{$today}-%") + 1;
         $invoiceNumber = 'INV-' . $today . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
 
         // Fetch products in stock
-        $products = Product::whereNull('deleted_at')->orderBy('name')->get();
+        $products = $this->productRepository->all()->whereNull('deleted_at')->sortBy('name');
 
         return view('sales.create', compact('customers', 'vehicles', 'paymentMethods', 'invoiceNumber', 'products'));
     }
@@ -121,7 +106,7 @@ class SaleController extends Controller
      */
     public function show($id)
     {
-        $sale = Sale::withTrashed()->with(['customer', 'vehicle', 'paymentMethod', 'items.product'])->findOrFail($id);
+        $sale = $this->saleRepository->findWithTrashedOrFail($id, ['customer', 'vehicle', 'paymentMethod', 'items.product']);
         return view('sales.show', compact('sale'));
     }
 
@@ -130,7 +115,7 @@ class SaleController extends Controller
      */
     public function print($id, Request $request)
     {
-        $sale = Sale::withTrashed()->with(['customer', 'vehicle', 'paymentMethod', 'items.product'])->findOrFail($id);
+        $sale = $this->saleRepository->findWithTrashedOrFail($id, ['customer', 'vehicle', 'paymentMethod', 'items.product']);
         
         $cashReceived = $request->query('cash_received', 0);
         $change = $request->query('change', 0);
@@ -143,8 +128,8 @@ class SaleController extends Controller
      */
     public function destroy($id)
     {
-        $sale = Sale::findOrFail($id);
-        $sale->delete();
+        $sale = $this->saleRepository->findOrFail($id);
+        $this->saleRepository->delete($sale->id);
 
         return redirect()->route('sales.index')->with('success', 'Transaksi Penjualan berhasil dihapus (soft delete).');
     }
@@ -154,28 +139,8 @@ class SaleController extends Controller
      */
     public function restore($id)
     {
-        $sale = Sale::onlyTrashed()->findOrFail($id);
-        $sale->restore();
+        $this->saleRepository->restore($id);
 
         return redirect()->route('sales.index', ['trashed' => 1])->with('success', 'Transaksi Penjualan berhasil dipulihkan.');
-    }
-
-    /**
-     * Search products in real-time.
-     */
-    public function searchProducts(Request $request)
-    {
-        $search = $request->query('query', '');
-        
-        $products = Product::whereNull('deleted_at')
-            ->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%")
-                  ->orWhere('barcode', 'like', "%{$search}%");
-            })
-            ->limit(20)
-            ->get();
-
-        return response()->json($products);
     }
 }

@@ -51,9 +51,9 @@ Route::get('/admin/setup-db', function () {
 Route::resource('analysis', AnalysisController::class)->only(['index']);
 
 // Protected Dashboard Route
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
+    ->middleware(['auth', 'role:Owner,Admin'])
+    ->name('dashboard');
 
 // Master Barang, Supplier, Kategori & Brand Routes
 Route::middleware(['auth', 'role:Owner,Admin'])->group(function () {
@@ -71,11 +71,28 @@ Route::middleware(['auth', 'role:Owner,Admin'])->group(function () {
 
     Route::patch('purchases/{purchase}/restore', [\App\Http\Controllers\PurchaseController::class, 'restore'])->name('purchases.restore');
     Route::resource('purchases', \App\Http\Controllers\PurchaseController::class);
+
+    // Laporan Kas
+    Route::get('reports/cash', [\App\Http\Controllers\CashReportController::class, 'index'])->name('reports.cash');
+    Route::get('reports/cash/pdf', [\App\Http\Controllers\CashReportController::class, 'exportPdf'])->name('reports.cash.pdf');
+
+    // Laporan Penjualan
+    Route::get('reports/sales', [\App\Http\Controllers\SalesReportController::class, 'index'])->name('reports.sales');
+    Route::get('reports/sales/pdf', [\App\Http\Controllers\SalesReportController::class, 'exportPdf'])->name('reports.sales.pdf');
+    Route::get('reports/sales/excel', [\App\Http\Controllers\SalesReportController::class, 'exportExcel'])->name('reports.sales.excel');
+
+    // Laporan Pembelian
+    Route::get('reports/purchases', [\App\Http\Controllers\PurchaseReportController::class, 'index'])->name('reports.purchases');
+    Route::get('reports/purchases/pdf', [\App\Http\Controllers\PurchaseReportController::class, 'exportPdf'])->name('reports.purchases.pdf');
+    Route::get('reports/purchases/excel', [\App\Http\Controllers\PurchaseReportController::class, 'exportExcel'])->name('reports.purchases.excel');
+
+    // Pengaturan Toko
+    Route::get('settings', [\App\Http\Controllers\SettingController::class, 'index'])->name('settings.index');
+    Route::put('settings', [\App\Http\Controllers\SettingController::class, 'update'])->name('settings.update');
 });
 
 // Modul POS (Point of Sale / Kasir) & Penjualan
 Route::middleware(['auth', 'role:Owner,Admin,Kasir'])->group(function () {
-    Route::get('sales/products/search', [\App\Http\Controllers\SaleController::class, 'searchProducts'])->name('sales.products.search');
     Route::patch('sales/{sale}/restore', [\App\Http\Controllers\SaleController::class, 'restore'])->name('sales.restore');
     Route::get('sales/{sale}/print', [\App\Http\Controllers\SaleController::class, 'print'])->name('sales.print');
     Route::resource('sales', \App\Http\Controllers\SaleController::class);

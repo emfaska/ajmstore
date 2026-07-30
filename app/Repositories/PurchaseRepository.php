@@ -97,4 +97,30 @@ class PurchaseRepository extends BaseRepository implements PurchaseRepositoryInt
         $record = $this->model->withTrashed()->findOrFail($id);
         return (bool) $record->restore();
     }
+
+    public function countWithTrashed(): int
+    {
+        return $this->model->newQuery()->withTrashed()->count();
+    }
+
+    public function getPurchaseReportData(array $filters): \Illuminate\Support\Collection
+    {
+        $query = $this->model->newQuery()
+            ->with(['supplier', 'cashTransactions'])
+            ->where('status', 'completed');
+
+        if (!empty($filters['start_date'])) {
+            $query->whereDate('purchase_date', '>=', $filters['start_date']);
+        }
+
+        if (!empty($filters['end_date'])) {
+            $query->whereDate('purchase_date', '<=', $filters['end_date']);
+        }
+
+        if (!empty($filters['supplier_id'])) {
+            $query->where('supplier_id', $filters['supplier_id']);
+        }
+
+        return $query->latest('purchase_date')->get();
+    }
 }

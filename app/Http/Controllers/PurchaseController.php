@@ -5,38 +5,51 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePurchaseRequest;
 use App\Http\Requests\UpdatePurchaseRequest;
 use App\Services\PurchaseService;
-use App\Models\Supplier;
-use App\Models\Product;
-use App\Models\PaymentMethod;
-use App\Models\Purchase;
+use App\Repositories\Contracts\SupplierRepositoryInterface;
+use App\Repositories\Contracts\ProductRepositoryInterface;
+use App\Repositories\Contracts\PaymentMethodRepositoryInterface;
+use App\Repositories\Contracts\PurchaseRepositoryInterface;
 use Illuminate\Http\Request;
 
 class PurchaseController extends Controller
 {
     protected PurchaseService $purchaseService;
+    protected SupplierRepositoryInterface $supplierRepository;
+    protected ProductRepositoryInterface $productRepository;
+    protected PaymentMethodRepositoryInterface $paymentMethodRepository;
+    protected PurchaseRepositoryInterface $purchaseRepository;
 
-    public function __construct(PurchaseService $purchaseService)
-    {
+    public function __construct(
+        PurchaseService $purchaseService,
+        SupplierRepositoryInterface $supplierRepository,
+        ProductRepositoryInterface $productRepository,
+        PaymentMethodRepositoryInterface $paymentMethodRepository,
+        PurchaseRepositoryInterface $purchaseRepository
+    ) {
         $this->purchaseService = $purchaseService;
+        $this->supplierRepository = $supplierRepository;
+        $this->productRepository = $productRepository;
+        $this->paymentMethodRepository = $paymentMethodRepository;
+        $this->purchaseRepository = $purchaseRepository;
     }
 
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'supplier_id', 'status', 'payment_status', 'start_date', 'end_date', 'trashed']);
         $purchases = $this->purchaseService->advancedSearchPaginated($filters, 10);
-        $suppliers = Supplier::orderBy('name')->get();
+        $suppliers = $this->supplierRepository->all()->sortBy('name');
 
         return view('purchases.index', compact('purchases', 'filters', 'suppliers'));
     }
 
     public function create()
     {
-        $suppliers = Supplier::where('is_active', true)->orderBy('name')->get();
-        $products = Product::orderBy('name')->get();
-        $paymentMethods = PaymentMethod::orderBy('name')->get();
+        $suppliers = $this->supplierRepository->all()->where('is_active', true)->sortBy('name');
+        $products = $this->productRepository->all()->sortBy('name');
+        $paymentMethods = $this->paymentMethodRepository->all()->sortBy('name');
 
         // Generate Invoice Number
-        $count = Purchase::withTrashed()->count() + 1;
+        $count = $this->purchaseRepository->countWithTrashed() + 1;
         $invoiceNumber = 'INV-PRC-' . date('Ymd') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
 
         return view('purchases.create', compact('suppliers', 'products', 'paymentMethods', 'invoiceNumber'));
@@ -66,9 +79,9 @@ class PurchaseController extends Controller
             return redirect()->route('purchases.index')->with('error', 'Hanya transaksi dengan status pending dan belum lunas yang dapat diubah.');
         }
 
-        $suppliers = Supplier::orderBy('name')->get();
-        $products = Product::orderBy('name')->get();
-        $paymentMethods = PaymentMethod::orderBy('name')->get();
+        $suppliers = $this->supplierRepository->all()->sortBy('name');
+        $products = $this->productRepository->all()->sortBy('name');
+        $paymentMethods = $this->paymentMethodRepository->all()->sortBy('name');
 
         return view('purchases.edit', compact('purchase', 'suppliers', 'products', 'paymentMethods'));
     }

@@ -168,4 +168,42 @@ class SaleService extends BaseService
             'stock' => $newStock,
         ]);
     }
+
+    /**
+     * Get sales report aggregates and matching listings.
+     */
+    public function getSalesReport(array $filters): array
+    {
+        $sales = $this->saleRepository->getSalesReportData($filters);
+
+        $totalOmzet = 0.0;
+        $totalItemTerjual = 0;
+        $totalLaba = 0.0;
+
+        foreach ($sales as $sale) {
+            $totalOmzet += (float) $sale->total_amount;
+
+            $saleLaba = 0.0;
+            foreach ($sale->items as $item) {
+                $totalItemTerjual += $item->quantity;
+                $purchasePrice = (float) ($item->product->purchase_price ?? 0);
+                $sellingPrice = (float) $item->selling_price;
+                
+                // Laba item = (harga jual - harga beli) * qty
+                $itemLaba = ($sellingPrice - $purchasePrice) * $item->quantity;
+                $saleLaba += $itemLaba;
+            }
+
+            // Kurangi diskon invoice level
+            $saleLaba -= (float) $sale->discount;
+            $totalLaba += $saleLaba;
+        }
+
+        return [
+            'sales' => $sales,
+            'total_omzet' => $totalOmzet,
+            'total_item_terjual' => $totalItemTerjual,
+            'total_laba' => $totalLaba,
+        ];
+    }
 }

@@ -272,4 +272,26 @@ class PurchaseService extends BaseService
     {
         return $this->purchaseRepository->restore($id);
     }
+
+    /**
+     * Get purchase report aggregates and matching listings.
+     */
+    public function getPurchaseReport(array $filters): array
+    {
+        $purchases = $this->purchaseRepository->getPurchaseReportData($filters);
+
+        $totalPembelian = 0.0;
+        $totalPengeluaran = 0.0;
+
+        foreach ($purchases as $purchase) {
+            $totalPembelian += (float) $purchase->total_amount;
+            $totalPengeluaran += (float) $purchase->cashTransactions->where('type', 'credit')->sum('amount');
+        }
+
+        return [
+            'purchases' => $purchases,
+            'total_pembelian' => $totalPembelian,
+            'total_pengeluaran' => $totalPengeluaran,
+        ];
+    }
 }
