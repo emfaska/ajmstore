@@ -15,6 +15,7 @@ class Customer extends Model
         'phone',
         'email',
         'address',
+        'notes',
     ];
 
     // -------------------------------------------------------------------------
@@ -39,8 +40,9 @@ class Customer extends Model
     {
         return $query->where(function ($q) use ($search) {
             $q->where('name', 'like', "%{$search}%")
-              ->orWhere('phone', 'like', "%{$search}%")
-              ->orWhere('email', 'like', "%{$search}%");
+                ->orWhere('phone', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhere('address', 'like', "%{$search}%");
         });
     }
 }

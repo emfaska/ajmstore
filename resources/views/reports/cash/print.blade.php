@@ -3,186 +3,277 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Arus Kas ({{ $startDate }} s.d {{ $endDate }})</title>
+    <title>Laporan Arus Kas — AJM Store ({{ $startDate }} s.d {{ $endDate }})</title>
     <style>
+        /* ── Reset & Base ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             font-size: 11px;
-            color: #333;
+            color: #1a202c;
             background: #fff;
-            padding: 20px;
-            margin: 0;
+            padding: 28px 32px;
         }
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .font-bold { font-weight: bold; }
-        .title {
-            font-size: 16px;
-            font-weight: bold;
-            margin: 0 0 5px 0;
-            text-transform: uppercase;
-        }
-        .subtitle {
-            font-size: 11px;
-            color: #666;
-            margin: 0 0 20px 0;
-        }
-        .summary-box {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
+
+        /* ── Header ── */
+        .report-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #2b6cb0; padding-bottom: 14px; }
+        .store-name   { font-size: 14px; font-weight: bold; letter-spacing: .06em; text-transform: uppercase; color: #1a202c; }
+        .report-title { font-size: 16px; font-weight: bold; text-transform: uppercase; color: #2b6cb0; margin: 4px 0 2px; }
+        .report-period{ font-size: 10px; color: #4a5568; }
+        .print-time   { font-size: 9px; color: #a0aec0; margin-top: 3px; }
+
+        /* ── KPI Summary Box ── */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            border: 1px solid #e2e8f0;
             border-radius: 6px;
-            background: #fcfcfc;
-            padding: 12px;
+            overflow: hidden;
+            margin-bottom: 18px;
         }
         .summary-item {
+            padding: 10px 12px;
             text-align: center;
-            flex: 1;
+            border-right: 1px solid #e2e8f0;
         }
-        .summary-item:not(:last-child) {
-            border-right: 1px solid #eee;
-        }
-        .summary-item span {
-            font-size: 10px;
-            color: #777;
-            text-transform: uppercase;
-        }
-        .summary-item h4 {
-            margin: 4px 0 0 0;
-            font-size: 13px;
-            font-weight: bold;
-        }
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .table th, .table td {
-            border: 1px solid #e2e8f0;
-            padding: 6px 8px;
-            text-align: left;
-        }
+        .summary-item:last-child { border-right: none; }
+        .summary-label { font-size: 9px; text-transform: uppercase; letter-spacing: .06em; color: #718096; font-weight: bold; }
+        .summary-value { font-size: 13px; font-weight: bold; margin-top: 4px; }
+        .summary-value.opening  { color: #2d3748; }
+        .summary-value.income   { color: #2f855a; }
+        .summary-value.expense  { color: #c53030; }
+        .summary-value.closing  { color: #2b6cb0; }
+
+        /* ── Ledger Table ── */
+        .table { width: 100%; border-collapse: collapse; margin-top: 0; }
         .table th {
-            background-color: #f7fafc;
+            background: #ebf8ff;
+            border: 1px solid #bee3f8;
+            padding: 6px 8px;
+            font-size: 9.5px;
             font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: #2b6cb0;
         }
-        .table tr.total-row {
-            background-color: #edf2f7;
+        .table td {
+            border: 1px solid #e2e8f0;
+            padding: 5.5px 8px;
+            font-size: 10px;
+            vertical-align: middle;
+        }
+        .table tr:nth-child(even) td { background: #f7fafc; }
+
+        /* Special rows */
+        .row-opening td   { background: #f7fafc !important; font-style: italic; color: #4a5568; font-weight: bold; }
+        .row-closing td   { background: #ebf8ff !important; font-weight: bold; color: #2b6cb0; }
+        .row-closing-label{ font-size: 9.5px; text-transform: uppercase; letter-spacing: .05em; }
+
+        /* Alignment helpers */
+        .text-right  { text-align: right; }
+        .text-center { text-align: center; }
+        .font-bold   { font-weight: bold; }
+
+        /* Colour helpers */
+        .clr-income  { color: #2f855a; }
+        .clr-expense { color: #c53030; }
+        .clr-saldo   { color: #2b6cb0; }
+        .clr-neg     { color: #c53030; }
+        .clr-muted   { color: #a0aec0; }
+
+        /* ── Type badge ── */
+        .badge {
+            display: inline-block;
+            font-size: 8.5px;
             font-weight: bold;
+            padding: 1px 6px;
+            border-radius: 99px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
         }
+        .badge-debit  { background: #c6f6d5; color: #276749; }
+        .badge-credit { background: #fed7d7; color: #9b2c2c; }
+
+        /* ── Footer ── */
+        .report-footer {
+            margin-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .footer-note { font-size: 9px; color: #a0aec0; }
+        .signature-block { text-align: center; font-size: 10px; }
+        .signature-block .sig-line {
+            width: 140px;
+            border-top: 1px solid #2d3748;
+            margin-top: 40px;
+            padding-top: 4px;
+        }
+
+        /* ── No-print buttons ── */
+        .no-print {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+            z-index: 999;
+        }
+        .btn {
+            padding: 8px 18px;
+            font-size: 12px;
+            font-weight: bold;
+            border: 0;
+            border-radius: 6px;
+            cursor: pointer;
+            letter-spacing: .03em;
+        }
+        .btn-print { background: #2b6cb0; color: #fff; }
+        .btn-close { background: #e53e3e; color: #fff; }
+
         @media print {
-            body {
-                padding: 0;
-                margin: 0;
-            }
-            .no-print {
-                display: none;
-            }
+            body { padding: 12px 16px; }
+            .no-print { display: none !important; }
+            .table tr { page-break-inside: avoid; }
         }
     </style>
 </head>
-<body onload="window.print()">
+<body>
 
-    <!-- Header -->
-    <div class="text-center">
-        <h1 class="title">Laporan Arus Kas</h1>
-        <div class="subtitle">AJM STORE — Periode: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} s.d {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</div>
+    {{-- ── Report Header ── --}}
+    <div class="report-header">
+        <div class="store-name">AJM Store</div>
+        <div class="report-title">Laporan Arus Kas</div>
+        <div class="report-period">
+            Periode: {{ \Carbon\Carbon::parse($startDate)->translatedFormat('d F Y') }}
+            s.d {{ \Carbon\Carbon::parse($endDate)->translatedFormat('d F Y') }}
+        </div>
+        <div class="print-time">Dicetak pada: {{ now()->translatedFormat('d F Y, H:i') }} WIB</div>
     </div>
 
-    <!-- Summary Widgets -->
-    <div class="summary-box">
+    {{-- ── KPI Summary ── --}}
+    <div class="summary-grid">
         <div class="summary-item">
-            <span>Saldo Awal</span>
-            <h4>Rp {{ number_format($saldoAwal, 0, ',', '.') }}</h4>
+            <div class="summary-label">Saldo Awal</div>
+            <div class="summary-value opening">Rp {{ number_format($saldoAwal, 0, ',', '.') }}</div>
         </div>
-        <div class="summary-item" style="color: #2f855a;">
-            <span>Total Kas Masuk</span>
-            <h4>+ Rp {{ number_format($kasMasuk, 0, ',', '.') }}</h4>
+        <div class="summary-item">
+            <div class="summary-label">Total Kas Masuk</div>
+            <div class="summary-value income">+ Rp {{ number_format($kasMasuk, 0, ',', '.') }}</div>
         </div>
-        <div class="summary-item" style="color: #c53030;">
-            <span>Total Kas Keluar</span>
-            <h4>- Rp {{ number_format($kasKeluar, 0, ',', '.') }}</h4>
+        <div class="summary-item">
+            <div class="summary-label">Total Kas Keluar</div>
+            <div class="summary-value expense">- Rp {{ number_format($kasKeluar, 0, ',', '.') }}</div>
         </div>
-        <div class="summary-item" style="color: #2b6cb0;">
-            <span>Saldo Akhir</span>
-            <h4>Rp {{ number_format($saldoAkhir, 0, ',', '.') }}</h4>
+        <div class="summary-item">
+            <div class="summary-label">Saldo Akhir</div>
+            <div class="summary-value closing">Rp {{ number_format($saldoAkhir, 0, ',', '.') }}</div>
         </div>
     </div>
 
-    <!-- Statement Table -->
+    {{-- ── Ledger Table ── --}}
     <table class="table">
         <thead>
             <tr>
-                <th width="12%">Tanggal</th>
-                <th width="35%">Keterangan</th>
-                <th width="15%">Referensi</th>
-                <th width="12%">Cara Bayar</th>
-                <th width="13%" class="text-right">Debit (+)</th>
-                <th width="13%" class="text-right">Credit (-)</th>
-                <th width="15%" class="text-right">Saldo Kas</th>
+                <th width="10%">Tanggal</th>
+                <th width="32%">Keterangan</th>
+                <th width="13%">Referensi</th>
+                <th width="10%">Metode</th>
+                <th width="7%"  class="text-center">Tipe</th>
+                <th width="12%" class="text-right">Debit (+)</th>
+                <th width="12%" class="text-right">Kredit (-)</th>
+                <th width="14%" class="text-right">Saldo Kas</th>
             </tr>
         </thead>
         <tbody>
-            <!-- Saldo Awal Row -->
-            <tr style="background: #f7fafc; font-style: italic;">
-                <td colspan="4" class="font-bold">SALDO SEBELUM PERIODE {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }}</td>
-                <td class="text-right">-</td>
-                <td class="text-right">-</td>
-                <td class="text-right font-bold">Rp {{ number_format($saldoAwal, 0, ',', '.') }}</td>
+
+            {{-- Saldo Awal --}}
+            <tr class="row-opening">
+                <td colspan="5">
+                    Saldo sebelum periode {{ \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y') }}
+                </td>
+                <td class="text-right clr-muted">—</td>
+                <td class="text-right clr-muted">—</td>
+                <td class="text-right clr-saldo">Rp {{ number_format($saldoAwal, 0, ',', '.') }}</td>
             </tr>
 
-            @php
-                $runningBalance = $saldoAwal;
-            @endphp
+            @php $runningBalance = $saldoAwal; @endphp
 
-            @foreach($transactions as $tx)
+            @forelse($transactions as $index => $tx)
                 @php
-                    if ($tx->type === 'debit') {
-                        $runningBalance += $tx->amount;
-                    } else {
-                        $runningBalance -= $tx->amount;
-                    }
+                    $runningBalance += ($tx->type === 'debit') ? $tx->amount : -$tx->amount;
+                    $typeParts = $tx->referenceable_type ? explode('\\', $tx->referenceable_type) : [];
+                    $refLabel  = $tx->referenceable_type
+                        ? (end($typeParts) . ' #' . $tx->referenceable_id)
+                        : 'Manual';
                 @endphp
                 <tr>
-                    <td>{{ \Carbon\Carbon::parse($tx->transaction_date)->format('d/m/Y') }}</td>
-                    <td>{{ $tx->description }}</td>
-                    <td>
-                        @if($tx->referenceable_type)
-                            @php
-                                $typeParts = explode('\\', $tx->referenceable_type);
-                                $typeName = end($typeParts);
-                            @endphp
-                            {{ $typeName }} #{{ $tx->referenceable_id }}
-                        @else
-                            Manual
-                        @endif
+                    <td>{{ $tx->transaction_date->translatedFormat('d M Y') }}</td>
+                    <td>{{ $tx->description ?? '—' }}</td>
+                    <td>{{ $refLabel }}</td>
+                    <td>{{ $tx->paymentMethod->name ?? '—' }}</td>
+                    <td class="text-center">
+                        <span class="badge {{ $tx->type === 'debit' ? 'badge-debit' : 'badge-credit' }}">
+                            {{ $tx->type === 'debit' ? 'Masuk' : 'Keluar' }}
+                        </span>
                     </td>
-                    <td>{{ $tx->paymentMethod->name ?? '-' }}</td>
-                    <td class="text-right" style="color: #2f855a;">
-                        {{ ($tx->type === 'debit') ? 'Rp ' . number_format($tx->amount, 0, ',', '.') : '-' }}
+                    <td class="text-right clr-income font-bold">
+                        {{ $tx->type === 'debit' ? 'Rp ' . number_format($tx->amount, 0, ',', '.') : '—' }}
                     </td>
-                    <td class="text-right" style="color: #c53030;">
-                        {{ ($tx->type === 'credit') ? 'Rp ' . number_format($tx->amount, 0, ',', '.') : '-' }}
+                    <td class="text-right clr-expense font-bold">
+                        {{ $tx->type === 'credit' ? 'Rp ' . number_format($tx->amount, 0, ',', '.') : '—' }}
                     </td>
-                    <td class="text-right font-bold">Rp {{ number_format($runningBalance, 0, ',', '.') }}</td>
+                    <td class="text-right font-bold {{ $runningBalance < 0 ? 'clr-neg' : 'clr-saldo' }}">
+                        Rp {{ number_format($runningBalance, 0, ',', '.') }}
+                    </td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="8" class="text-center" style="padding: 16px; color: #a0aec0; font-style: italic;">
+                        Tidak ada transaksi kas pada periode ini.
+                    </td>
+                </tr>
+            @endforelse
 
-            <!-- Saldo Akhir Row -->
-            <tr class="total-row">
-                <td colspan="4">SALDO HINGGA PERIODE {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</td>
-                <td class="text-right" style="color: #2f855a;">+ Rp {{ number_format($kasMasuk, 0, ',', '.') }}</td>
-                <td class="text-right" style="color: #c53030;">- Rp {{ number_format($kasKeluar, 0, ',', '.') }}</td>
-                <td class="text-right" style="color: #2b6cb0; font-size: 12px;">Rp {{ number_format($saldoAkhir, 0, ',', '.') }}</td>
+            {{-- Saldo Akhir --}}
+            <tr class="row-closing">
+                <td colspan="5" class="row-closing-label">
+                    Saldo Akhir Per {{ \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y') }}
+                </td>
+                <td class="text-right clr-income font-bold">
+                    Rp {{ number_format($kasMasuk, 0, ',', '.') }}
+                </td>
+                <td class="text-right clr-expense font-bold">
+                    Rp {{ number_format($kasKeluar, 0, ',', '.') }}
+                </td>
+                <td class="text-right clr-saldo font-bold" style="font-size: 12px;">
+                    Rp {{ number_format($saldoAkhir, 0, ',', '.') }}
+                </td>
             </tr>
         </tbody>
     </table>
 
-    <!-- Printing Action Button (no-print) -->
-    <div class="no-print text-center" style="margin-top: 30px;">
-        <button onclick="window.print()" style="padding: 6px 16px; font-weight: bold; background: #3182ce; color: #fff; border: 0; border-radius: 4px; cursor: pointer;">Cetak</button>
-        <button onclick="window.close()" style="padding: 6px 16px; font-weight: bold; background: #e53e3e; color: #fff; border: 0; border-radius: 4px; cursor: pointer; margin-left: 10px;">Tutup</button>
+    {{-- ── Footer / Signature ── --}}
+    <div class="report-footer">
+        <div class="footer-note">
+            * Laporan ini digenerate secara otomatis oleh sistem AJM Store.<br>
+            * Saldo berjalan dihitung dari total debit dikurangi total kredit kumulatif.
+        </div>
+        <div class="signature-block">
+            <div>Mengetahui,</div>
+            <div class="sig-line">Pemilik / Manager</div>
+        </div>
+    </div>
+
+    {{-- ── Print Action Buttons (hidden on print) ── --}}
+    <div class="no-print">
+        <button class="btn btn-print" onclick="window.print()">
+            🖨 Cetak PDF
+        </button>
+        <button class="btn btn-close" onclick="window.close()">
+            ✕ Tutup
+        </button>
     </div>
 
 </body>
